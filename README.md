@@ -140,6 +140,14 @@ For compatibility with standalone Pomodoro conventions, Clockwork also reads
 `pomodorosPerCycle`, `sound`, and `breakColor` when their namespaced Clockwork
 counterparts are absent.
 
+## Dependencies and permissions
+
+Clockwork requires the Omarchy Quattro shell. It invokes the Omarchy-provided
+`omarchy-notification-send` command for notifications and PipeWire's `pw-play`
+with the freedesktop system sound files for audible alerts. It installs no
+packages, starts no daemon, makes no network requests, and requires no secrets
+or privileged access.
+
 ## Remove the local copy
 
 ```sh

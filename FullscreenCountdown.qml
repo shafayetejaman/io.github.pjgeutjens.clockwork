@@ -74,6 +74,7 @@ PanelWindow {
 
       Text {
         text: root.message
+        textFormat: Text.PlainText
         color: root.onScrim
         font.family: root.fontFamily
         font.pixelSize: Math.min(Style.font.displayLarge * 1.8, keyCatcher.width / 16)
