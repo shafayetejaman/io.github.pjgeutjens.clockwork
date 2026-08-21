@@ -1,0 +1,2 @@
+module io.github.pjgeutjens.clockwork
+singleton TimerState 1.0 TimerState.qml
