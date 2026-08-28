@@ -129,7 +129,7 @@ Item {
     : formatTime(displayMs, mode === stopwatchMode)
   readonly property string barTimeText: running || storedElapsedMs > 0 || completed
     || (mode === pomodoroMode && pomodoroSessionStarted)
-    ? formatTime(displayMs, false)
+    ? formatBarTime(displayMs)
     : ""
 
   function formatTime(milliseconds, showCentiseconds) {
@@ -150,6 +150,15 @@ Item {
 
   function pad2(value) {
     return value < 10 ? "0" + value : String(value)
+  }
+
+  function formatBarTime(milliseconds) {
+    var safeMilliseconds = Math.max(0, Math.floor(milliseconds))
+    var totalSeconds = Math.ceil(safeMilliseconds / 1000)
+    var hours = Math.floor(totalSeconds / 3600)
+    var minutes = Math.floor((totalSeconds % 3600) / 60)
+    var mm = minutes < 10 ? "0" + minutes : String(minutes)
+    return hours > 0 ? hours + ":" + mm : String(mm)
   }
 
   function selectMode(nextMode) {

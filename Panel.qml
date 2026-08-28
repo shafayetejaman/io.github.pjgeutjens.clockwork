@@ -448,6 +448,8 @@ Panel {
                 visible: TimerCore.TimerState.mode === TimerCore.TimerState.alarmMode
                 anchors.verticalCenter: parent.verticalCenter
                 radius: Style.cornerRadius
+                width: alarmPeriodLabel.contentWidth + Style.spacing.controlPaddingX * 2
+                height: alarmPeriodLabel.contentHeight + Style.spacing.controlPaddingY * 2
                 color: Style.controlFill(
                   periodArea.containsMouse, periodArea.containsMouse,
                   root.contentForeground, Color.accent)
@@ -463,7 +465,6 @@ Panel {
                   font.pixelSize: Style.font.body
                   font.bold: true
                   color: root.contentForeground
-                  padding: Style.space(6)
                 }
 
                 MouseArea {
