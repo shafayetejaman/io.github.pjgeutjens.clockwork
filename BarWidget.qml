@@ -152,7 +152,7 @@ BarWidget {
 
     function alarm(hour: string, minute: string, message: string): string {
       TimerCore.TimerState.selectMode(TimerCore.TimerState.alarmMode)
-      TimerCore.TimerState.setAlarmHour(parseInt(hour, 10) || 0)
+      TimerCore.TimerState.setAlarmHour24(parseInt(hour, 10) || 0)
       TimerCore.TimerState.setAlarmMinute(parseInt(minute, 10) || 0)
       TimerCore.TimerState.setAlarmMessage(message)
       return TimerCore.TimerState.statusText

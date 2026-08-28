@@ -388,8 +388,8 @@ Panel {
               TimeField {
                 id: majorTimeLeft
                 label: TimerCore.TimerState.mode === TimerCore.TimerState.alarmMode ? "Hour" : "Minutes"
-                from: 0
-                to: TimerCore.TimerState.mode === TimerCore.TimerState.alarmMode ? 23 : 999
+                from: TimerCore.TimerState.mode === TimerCore.TimerState.alarmMode ? 1 : 0
+                to: TimerCore.TimerState.mode === TimerCore.TimerState.alarmMode ? 12 : 999
                 value: TimerCore.TimerState.mode === TimerCore.TimerState.alarmMode
                   ? TimerCore.TimerState.alarmHour
                   : TimerCore.TimerState.countdownMinutes
@@ -440,6 +440,38 @@ Panel {
                 onNavigationRequested: function(direction) { root.finishEditingAndMove(direction) }
                 onHoveredChangedByPointer: function(hovered) {
                   if (hovered) root.selectCursor("major-right")
+                }
+              }
+
+              BorderSurface {
+                id: alarmPeriod
+                visible: TimerCore.TimerState.mode === TimerCore.TimerState.alarmMode
+                anchors.verticalCenter: parent.verticalCenter
+                radius: Style.cornerRadius
+                color: Style.controlFill(
+                  periodArea.containsMouse, periodArea.containsMouse,
+                  root.contentForeground, Color.accent)
+                borderSpec: Border.controlSpec(
+                  periodArea.containsMouse ? "hover-cursor" : "normal",
+                  root.contentForeground, Color.accent)
+
+                Text {
+                  id: alarmPeriodLabel
+                  anchors.centerIn: parent
+                  text: TimerCore.TimerState.alarmIsPM ? "PM" : "AM"
+                  font.family: root.contentFontFamily
+                  font.pixelSize: Style.font.body
+                  font.bold: true
+                  color: root.contentForeground
+                  padding: Style.space(6)
+                }
+
+                MouseArea {
+                  id: periodArea
+                  anchors.fill: parent
+                  hoverEnabled: true
+                  cursorShape: Qt.PointingHandCursor
+                  onClicked: TimerCore.TimerState.setAlarmIsPM(!TimerCore.TimerState.alarmIsPM)
                 }
               }
             }

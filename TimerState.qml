@@ -30,6 +30,7 @@ Item {
   property int intervalSeconds: 30
   property int alarmHour: 7
   property int alarmMinute: 0
+  property bool alarmIsPM: false
   property string alarmMessage: "Alarm"
   property double alarmTargetAt: 0
   property int alarmTargetDurationMs: 0
@@ -92,7 +93,9 @@ Item {
   readonly property int currentRound: mode === intervalsMode
     ? Math.min(Math.max(1, intervalRounds), Math.floor(elapsedMs / intervalDurationMs) + 1)
     : 0
-  readonly property string alarmTimeText: pad2(alarmHour) + ":" + pad2(alarmMinute)
+  readonly property string alarmTimeText:
+    (alarmHour >= 1 && alarmHour <= 12 ? alarmHour : 12) + ":" + pad2(alarmMinute)
+    + " " + (alarmIsPM ? "PM" : "AM")
   readonly property string modeName: mode === stopwatchMode
     ? "Stopwatch"
     : mode === countdownMode
@@ -220,12 +223,24 @@ Item {
   }
 
   function setAlarmHour(value) {
-    alarmHour = Math.max(0, Math.min(23, Number(value)))
+    alarmHour = Math.max(1, Math.min(12, Number(value)))
     reset()
   }
 
   function setAlarmMinute(value) {
     alarmMinute = Math.max(0, Math.min(59, Number(value)))
+    reset()
+  }
+
+  function setAlarmIsPM(value) {
+    alarmIsPM = Boolean(value)
+    reset()
+  }
+
+  function setAlarmHour24(value) {
+    var hour24 = Math.max(0, Math.min(23, Number(value)))
+    alarmHour = hour24 % 12 === 0 ? 12 : hour24 % 12
+    alarmIsPM = hour24 >= 12
     reset()
   }
 
@@ -237,7 +252,9 @@ Item {
   function prepareAlarm() {
     var current = Date.now()
     var target = new Date(current)
-    target.setHours(alarmHour, alarmMinute, 0, 0)
+    var hour12 = Math.max(1, Math.min(12, alarmHour))
+    var hour24 = (hour12 % 12) + (alarmIsPM ? 12 : 0)
+    target.setHours(hour24, alarmMinute, 0, 0)
     if (target.getTime() <= current) target.setDate(target.getDate() + 1)
     alarmTargetAt = target.getTime()
     alarmTargetDurationMs = Math.max(1, Math.round(alarmTargetAt - current))
