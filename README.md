@@ -23,7 +23,7 @@ next focus phase waits for you to resume it.
 ## Install
 
 ```sh
-omarchy plugin add https://github.com/pjgeutjens/omarchy-clockwork.git --enable
+omarchy plugin add https://github.com/shafayetejaman/io.github.pjgeutjens.clockwork.git --enable
 ```
 
 Update an installed copy with:
