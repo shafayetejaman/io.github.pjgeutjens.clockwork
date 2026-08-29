@@ -140,7 +140,7 @@ Item {
     : formatTime(displayMs, mode === stopwatchMode)
   readonly property string barTimeText: running || storedElapsedMs > 0 || completed
     || (mode === pomodoroMode && pomodoroSessionStarted)
-    ? formatBarTime(displayMs)
+    ? formatBarTime(displayMs, mode === stopwatchMode)
     : ""
 
   function formatTime(milliseconds, showCentiseconds) {
@@ -163,12 +163,17 @@ Item {
     return value < 10 ? "0" + value : String(value)
   }
 
-  function formatBarTime(milliseconds) {
+  function formatBarTime(milliseconds, showSeconds) {
     var safeMilliseconds = Math.max(0, Math.floor(milliseconds))
-    var totalSeconds = Math.ceil(safeMilliseconds / 1000)
+    var totalSeconds = showSeconds
+      ? Math.floor(safeMilliseconds / 1000)
+      : Math.ceil(safeMilliseconds / 1000)
     var hours = Math.floor(totalSeconds / 3600)
     var minutes = Math.floor((totalSeconds % 3600) / 60)
+    var seconds = totalSeconds % 60
     var mm = minutes < 10 ? "0" + minutes : String(minutes)
+    var ss = seconds < 10 ? "0" + seconds : String(seconds)
+    if (showSeconds) return hours > 0 ? hours + ":" + mm + ":" + ss : mm + ":" + ss
     return hours > 0 ? hours + ":" + mm : String(mm)
   }
 
@@ -603,9 +608,10 @@ Item {
   Timer {
     // Tick is a display refresh, not a time source: tick() reads the wall
     // clock, so countdown/intervals/pomodoro stay exact at 250 ms. The
-    // stopwatch's centiseconds are the only thing that needs anything faster,
-    // and 50 Hz is as smooth as the eye can track.
-    interval: root.mode === root.stopwatchMode ? 20 : 250
+    // stopwatch used to redraw at 50 Hz for its centiseconds, but the bar now
+    // shows seconds and 4 Hz is plenty, saving CPU. Time accuracy is unaffected
+    // since it comes from wall-clock math, not this refresh rate.
+    interval: 250
     repeat: true
     running: root.running
     onTriggered: root.tick()
