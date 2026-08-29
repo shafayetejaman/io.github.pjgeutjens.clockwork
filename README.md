@@ -34,6 +34,11 @@ omarchy plugin update io.github.pjgeutjens.clockwork
 
 ## Local development
 
+Editing the QML files reloads the plugin. Because Quickshell keeps singletons
+alive across reloads, a live alarm keeps running while you edit `BarWidget.qml`
+or `Panel.qml`. Editing `TimerState.qml` re-creates the state singleton and
+restores the alarm from `~/.local/state/omarchy/clockwork.json`.
+
 Validate the plugin from this repository:
 
 ```sh
@@ -157,5 +162,15 @@ omarchy plugin remove io.github.pjgeutjens.clockwork
 ## Runtime notes
 
 This plugin runs inside the long-lived `omarchy-shell` process and starts no
-daemon of its own. Its timer state survives closing the panel, but resets when
-the shell itself restarts.
+daemon of its own. Its timer state survives closing the panel, but most add-on
+state resets when the shell itself restarts.
+
+The **alarm** is the one exception: its settings (hour, minute, AM/PM, message)
+and whether it was armed are saved to `~/.local/state/omarchy/clockwork.json`.
+When the shell starts it restores that alarm. If it was armed, it is re-armed
+for the next occurrence of the saved time (a time that already passed arms for
+the following day); if it was not armed, the settings are restored while the
+alarm stays disarmed. The file is rewritten whenever the alarm's settings or
+armed state change, and again every two minutes while an armed alarm is
+counting down. While the alarm is idle, no periodic writes happen. Other modes
+still reset on shell restart.

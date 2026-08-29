@@ -2,6 +2,8 @@ pragma Singleton
 
 import QtQuick
 import Quickshell
+import Quickshell.Io
+import qs.Commons
 
 Item {
   id: root
@@ -20,6 +22,15 @@ Item {
   property double nowMs: Date.now()
   property int notifiedIntervals: 0
   property int completionBellsRemaining: 0
+  property bool applyingState: false
+
+  signal stateChanged()
+
+  readonly property string home: Quickshell.env("HOME")
+  readonly property string stateBase: (Quickshell.env("XDG_STATE_HOME") || home + "/.local/state") + "/omarchy"
+  readonly property string statePath: root.stateBase + "/clockwork.json"
+  property bool restored: false
+  property string lastWrittenJson: ""
 
   property int countdownMinutes: 5
   property int countdownSeconds: 0
@@ -166,6 +177,7 @@ Item {
     if (nextMode === mode) return
     mode = nextMode
     reset()
+    emitStateChanged()
   }
 
   function startPause() {
@@ -184,6 +196,7 @@ Item {
     nowMs = Date.now()
     startedAt = nowMs
     running = true
+    emitStateChanged()
   }
 
   function pause() {
@@ -191,6 +204,7 @@ Item {
     nowMs = Date.now()
     storedElapsedMs = elapsedMs
     running = false
+    emitStateChanged()
   }
 
   function reset() {
@@ -210,6 +224,7 @@ Item {
       pomodoroCompletedCycles = 0
       pomodoroSessionStarted = false
     }
+    emitStateChanged()
   }
 
   function setCountdownMinutes(value) {
@@ -234,16 +249,19 @@ Item {
   function setAlarmHour(value) {
     alarmHour = Math.max(1, Math.min(12, Number(value)))
     reset()
+    emitStateChanged()
   }
 
   function setAlarmMinute(value) {
     alarmMinute = Math.max(0, Math.min(59, Number(value)))
     reset()
+    emitStateChanged()
   }
 
   function setAlarmIsPM(value) {
     alarmIsPM = Boolean(value)
     reset()
+    emitStateChanged()
   }
 
   function setAlarmHour24(value) {
@@ -251,11 +269,13 @@ Item {
     alarmHour = hour24 % 12 === 0 ? 12 : hour24 % 12
     alarmIsPM = hour24 >= 12
     reset()
+    emitStateChanged()
   }
 
   function setAlarmMessage(message) {
     var cleaned = String(message || "").trim()
     alarmMessage = cleaned === "" ? "Alarm" : cleaned
+    emitStateChanged()
   }
 
   function prepareAlarm() {
@@ -422,6 +442,7 @@ Item {
       : mode === alarmMode
         ? alarmMessage
         : "Countdown complete")
+    emitStateChanged()
   }
 
   function playSound(soundFile) {
@@ -457,6 +478,126 @@ Item {
       "Clockwork",
       message
     ])
+  }
+
+  function emitStateChanged() {
+    if (applyingState) return
+    stateChanged()
+  }
+
+  function stateJson() {
+    if (mode !== alarmMode) return ""
+    return JSON.stringify({
+      mode: alarmMode,
+      alarmHour: alarmHour,
+      alarmMinute: alarmMinute,
+      alarmIsPM: alarmIsPM,
+      alarmMessage: alarmMessage,
+      running: running
+    })
+  }
+
+  function applyStateJson(json) {
+    if (!json) return
+    var data = null
+    try {
+      data = JSON.parse(json)
+    } catch (e) {
+      return
+    }
+    if (!data || Number(data.mode) !== alarmMode) return
+    applyingState = true
+    alarmHour = Math.max(1, Math.min(12, Number(data.alarmHour) || 1))
+    alarmMinute = Math.max(0, Math.min(59, Number(data.alarmMinute) || 0))
+    alarmIsPM = Boolean(data.alarmIsPM)
+    alarmMessage = String(data.alarmMessage || "Alarm")
+    mode = alarmMode
+    if (Boolean(data.running)) {
+      prepareAlarm()
+      nowMs = Date.now()
+      startedAt = nowMs
+      storedElapsedMs = 0
+      running = true
+    } else {
+      alarmTargetAt = 0
+      alarmTargetDurationMs = 0
+      storedElapsedMs = 0
+      running = false
+      completed = false
+    }
+    applyingState = false
+    stateChanged()
+  }
+
+  function restoreFromDisk() {
+    if (restored || !stateFile.loaded) return
+    restored = true
+    var json = stateFile.text()
+    if (json) {
+      applyStateJson(json)
+      lastWrittenJson = stateJson()
+    }
+    persistWriteTimer.stop()
+  }
+
+  function schedulePersistWrite() {
+    persistWriteTimer.restart()
+  }
+
+  function writeStateNow() {
+    if (mode !== alarmMode) return
+    var json = stateJson()
+    if (!json || json === lastWrittenJson) return
+    lastWrittenJson = json
+    stateFile.setText(json)
+  }
+
+  Component.onCompleted: {
+    root.lastWrittenJson = ""
+    ensureStateDir.running = true
+  }
+
+  Connections {
+    target: root
+    function onStateChanged() {
+      if (!root.restored) return
+      root.schedulePersistWrite()
+    }
+  }
+
+  Process {
+    id: ensureStateDir
+    command: ["bash", "-c", "mkdir -p " + Util.shellQuote(root.stateBase)]
+    onExited: {
+      if (stateFile.loaded) root.restoreFromDisk()
+    }
+  }
+
+  FileView {
+    id: stateFile
+    path: root.statePath
+    atomicWrites: true
+    printErrors: false
+    onLoaded: {
+      if (ensureStateDir.running) return
+      root.restoreFromDisk()
+    }
+    onLoadFailed: root.restored = true
+  }
+
+  Timer {
+    id: persistWriteTimer
+    interval: 60
+    repeat: false
+    onTriggered: root.writeStateNow()
+  }
+
+  Timer {
+    id: periodicSaveTimer
+    interval: 120000
+    repeat: true
+    running: root.mode === root.alarmMode && root.running
+    onTriggered: root.writeStateNow()
   }
 
   Timer {
