@@ -601,7 +601,11 @@ Item {
   }
 
   Timer {
-    interval: root.mode === root.stopwatchMode ? 10 : 100
+    // Tick is a display refresh, not a time source: tick() reads the wall
+    // clock, so countdown/intervals/pomodoro stay exact at 250 ms. The
+    // stopwatch's centiseconds are the only thing that needs anything faster,
+    // and 50 Hz is as smooth as the eye can track.
+    interval: root.mode === root.stopwatchMode ? 20 : 250
     repeat: true
     running: root.running
     onTriggered: root.tick()
